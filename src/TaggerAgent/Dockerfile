@@ -1,5 +1,5 @@
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+# Build stage — Alpine reduces image size from ~900MB to ~200MB (compressed)
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 
 # Copy project file first for layer caching on restore
@@ -14,8 +14,8 @@ RUN dotnet publish -c Release -o /app/publish \
     --self-contained false \
     -p:PublishReadyToRun=true
 
-# Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+# Runtime stage — Alpine reduces image size from ~220MB to ~110MB (compressed)
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 WORKDIR /app
 
 COPY --from=build /app/publish .

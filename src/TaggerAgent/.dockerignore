@@ -38,3 +38,7 @@ agent.yaml
 
 # Squad/project tooling
 .squad/
+
+# Development-only files
+*.Development.json
+.editorconfig

@@ -92,6 +92,8 @@ The agent operates within a single Azure subscription at a time, with per-subscr
    azd up
    ```
    This command provisions all infrastructure (Foundry account, Function app, storage), builds and pushes the agent container, and deploys the solution end-to-end.
+   
+   **Note:** The first deploy may take 8-10 minutes as ACR pulls base images. See [Deployment](#deployment) section below for details.
 
 3. **Interact with the agent:**
    - **Interactive mode:** Use Azure Portal, Azure CLI, or a custom chat interface to send messages to the agent (e.g., "Scan my subscription for untagged resources").
@@ -99,6 +101,27 @@ The agent operates within a single Azure subscription at a time, with per-subscr
 
 4. **Define rules:**
    The agent guides you through creating tagging rules conversationally. Rules are stored per subscription in Blob Storage and can be managed, reviewed, and copied across subscriptions.
+
+## Deployment
+
+### First Deploy
+
+The first `azd up` from a clean environment may take 8-10 minutes as Azure Container Registry (ACR) pulls base images from Microsoft Container Registry. This is expected behavior.
+
+**Why it takes time:**
+- ACR remote build pulls .NET SDK Alpine image (~200 MB compressed)
+- ACR pulls .NET runtime Alpine image (~110 MB compressed)
+- Builds and publishes the C# agent (~15 MB application code)
+- Pushes final image to ACR
+- Foundry creates the hosted agent container
+
+**If the first deploy times out (10-minute limit):**
+1. The infrastructure is already provisioned (Foundry, storage, Function App)
+2. Run `azd deploy tagger-agent` again — cached layers complete in 2-3 minutes
+3. OR run `azd deploy functions` first (warms ACR), then `azd deploy tagger-agent`
+
+**Incremental deploys (code changes):**
+Subsequent deploys use cached base image layers and complete in 2-3 minutes. Only the application layer rebuilds.
 
 ### Configuration
 

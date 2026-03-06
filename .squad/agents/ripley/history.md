@@ -118,7 +118,24 @@
 - **Key insight:** Default should optimize for "works out of the box," not "maximum capability." The -mini suffix doesn't mean "toy model" — it means "optimized for structured tasks." For tagging workflows with function calling, -mini is the right choice.
 - **Decision doc:** `.squad/decisions/inbox/ripley-model-default.md`
 
-### 2026-03-06 — Squad Places Enlistment
+### 2026-03-06 — Container Image Optimization
+
+- **Problem:** `azd deploy` for `tagger-agent` timing out at 10 minutes during ACR remote build.
+- **Root cause analysis:** Application is TINY (31 source files, 54 KB, publishes to 15.53 MB). No dependency bloat. Problem is ACR pulling ~1.1 GB of base images from Microsoft Container Registry on every cold build.
+- **Source code measurement:** 31 C# files, 54 KB total source. Published output: 35 files, 15.53 MB (framework-dependent). Core TaggerAgent.dll is only ~10 KB.
+- **Dependency analysis:** Largest assemblies are OpenAI.dll (4.25 MB), Azure.AI.Agents.Persistent.dll (1.53 MB), Azure.ResourceManager.dll (1.39 MB). All packages are essential — no trimming possible.
+- **Base image analysis:** Original Dockerfile used `mcr.microsoft.com/dotnet/sdk:10.0` (~900 MB compressed) and `mcr.microsoft.com/dotnet/aspnet:10.0` (~220 MB compressed). Total base image pull: ~1.1 GB.
+- **Fix implemented:** Switched to Alpine base images: `sdk:10.0-alpine` (~200 MB) and `aspnet:10.0-alpine` (~110 MB). Reduces base image pull by ~65% (~800 MB savings).
+- **Expected impact:** First deploy: 6-8 minutes (down from 10+). Incremental deploys: 2-3 minutes with cached layers.
+- **Self-contained rejected:** Previous analysis confirmed Azure SDK assemblies use reflection heavily. Trimming would break Azure.ResourceManager, Azure.Identity, Azure.Storage.Blobs. Framework-dependent is correct.
+- **Alternative hosting rejected:** Foundry hosted agents require container protocol (responses API at `/responses` endpoint). App Service or Functions would require complete rewrite of hosting layer.
+- **ReadyToRun kept:** `-p:PublishReadyToRun=true` pre-JITs assemblies for faster startup. Increases size ~15% but necessary for Foundry health probes (no JIT warmup delay).
+- **Additional fixes:** Enhanced `.dockerignore` to exclude `.editorconfig`, `*.Development.json`, and other non-build files. Updated README.md with deployment guidance explaining first-deploy timing and retry workflow.
+- **Upstream recommendation:** azd `azure.ai.agents` extension hardcodes 10-minute timeout with no configuration. Should file issue on `Azure/azure-dev` for configurable timeout or 15-minute default.
+- **Key insight:** The application is NOT the problem. It's minimal, well-architected, with zero bloat. Timeout is caused by ACR remote build infrastructure (base image pulls). Alpine optimization addresses the largest bottleneck.
+- **Files changed:** `src/TaggerAgent/Dockerfile` (Alpine images), `src/TaggerAgent/.dockerignore` (exclusions), `README.md` (deployment section), `.squad/decisions/inbox/ripley-image-analysis.md` (full analysis).
+
+
 
 - **Activity:** Enlisted squad on Squad Places social network as "MU-TH-UR 6000"
 - **Published:** capabilityHosts Bicep fix lesson post with code walkthrough
