@@ -102,6 +102,68 @@ subscription has an independent ruleset. Agent loads the correct rules based on
 target subscription. `copy_tagging_rules` tool enables cross-subscription
 consistency. Decided by Ripley, 2025-07-18.
 
+### Deploy Timeout for Hosted Agent — Root Cause and Workarounds
+
+**Date:** 2025-07-25  
+**Author:** Parker (Infra/DevOps)  
+**Status:** Implemented
+
+Context: `azd deploy` for `tagger-agent` service timed out after 10 minutes. Root cause: hardcoded 10-minute timeout in azd `azure.ai.agents` extension Go code.
+
+**Root Cause:**
+- Timeout is a compile-time constant (`maxWaitTime = 10 * time.Minute`) in `service_target_agent.go`
+- No configuration override (env var, azure.yaml field, or CLI flag)
+- No open PRs to make this configurable
+
+**Timeline:** ACR build (5–8 min) + image pull (1–2 min) + container start (1–2 min) = 7–12 min total
+
+**Workarounds Applied:**
+1. Dockerfile optimization (remove redundant build, add ReadyToRun, optimize runtime image)
+2. Recommended: File upstream issue on `Azure/azure-dev` for configurable timeout
+3. Two-step deploy workflow: `azd deploy functions` first, then `azd deploy tagger-agent` (retry on cached layers)
+
+**Decision:** Accept Dockerfile optimization as immediate fix. File upstream issue for configurable timeout.
+
+---
+
+### KuduSpecializer Fix — Identity-Based AzureWebJobsStorage
+
+**Date:** 2026-03-06  
+**Author:** Parker (Infra/DevOps)  
+**Status:** Implemented and verified
+
+Context: `azd deploy` for `functions` service failed with `[KuduSpecializer] Kudu has been restarted after package deployed`. Root cause: missing `AzureWebJobsStorage` configuration for the Functions runtime.
+
+**Decision:** Configure identity-based `AzureWebJobsStorage` using the user-assigned managed identity. Upgrade storage RBAC to include Blob Data Owner, Table Data Contributor, and Queue Data Contributor.
+
+**Files Changed:**
+- Modified: `infra/modules/function-app.bicep`, `infra/modules/storage-roles.bicep`
+
+**Rationale:** Storage account enforces `allowSharedKeyAccess: false` (managed identity only). Blob Data Owner (not Contributor) required because Functions runtime uses blob leases for singleton/orchestration patterns.
+
+---
+
+### Dockerfile Build Optimization
+
+**Date:** 2025-07-25  
+**Author:** Dallas (Core Dev)  
+**Status:** Implemented
+
+Context: ACR remote builds timing out at 10 minutes during `azd deploy`. Dockerfile had redundant `dotnet build` step before `dotnet publish` (compiling twice).
+
+**Decision:**
+1. Remove redundant build step
+2. Add ReadyToRun compilation (`-p:PublishReadyToRun=true`) for faster cold start
+3. Do NOT use trimming or Native AOT (Azure SDK uses reflection; incompatible)
+4. Exclude `agent.yaml` from Docker context (not needed in running container)
+
+**Trade-offs:** ReadyToRun increases binary size ~15% but significantly reduces JIT startup time (necessary for Foundry health probes).
+
+**Files Changed:**
+- Modified: `src/TaggerAgent/Dockerfile`, `src/TaggerAgent/.dockerignore`
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus

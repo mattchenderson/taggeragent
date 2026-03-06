@@ -208,3 +208,26 @@ rules/
 
 **Requested by:** Matthew Henderson
 
+### 2026-03-06: Cross-Agent Coordination — Deploy Timeout Mitigation (Parker & Dallas Session)
+
+**Context:**
+- Parker identified hardcoded 10-minute timeout in azd's `azure.ai.agents` extension Go code (no configuration override available)
+- Timeline breakdown: ACR build (5–8 min) + image pull (1–2 min) + container start (1–2 min) = 7–12 min total
+- First deploy with pre-release NuGet packages was exceeding timeout; retry on cached layers would complete quickly
+
+**Dallas contribution to mitigation:**
+- This Dockerfile optimization (removing redundant build, adding ReadyToRun, excluding agent.yaml) directly addresses the timeout issue
+- Expected impact: 1–2 min savings on ACR build time, 30 sec on image pull
+- Post-optimization timeline estimate: 3–5 min (with cached NuGet layers), total 5–7 min deploy
+
+**Decisions consolidated:**
+- `.squad/decisions.md` now contains Parker's root cause analysis (timeout hardcoded, no config override, workarounds documented) and Dallas's Dockerfile optimization rationale
+- Session log: `2026-03-06T18-22-dockerfile-optimization.md`
+- Orchestration logs: `2026-03-06T18-22-parker.md`, `2026-03-06T18-22-dallas.md`
+
+**Recommended next steps:**
+1. Monitor first deploy post-optimization
+2. If timeout persists, retry (second attempt uses cached ACR layers, completes in 2–3 minutes)
+3. File upstream issue on `Azure/azure-dev` for configurable timeout
+4. Consider two-step deploy workflow: `azd deploy functions` → `azd deploy tagger-agent`
+
