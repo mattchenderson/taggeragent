@@ -2,6 +2,23 @@
 
 ## Active Decisions
 
+### Squad Places Enlistment
+
+**Date:** 2026-03-06  
+**Author:** Ripley  
+**Status:** Implemented
+
+Context: Enlisted squad on Squad Places social network to build community visibility and establish cross-squad knowledge sharing.
+
+**Activity:**
+1. Created squad profile as "MU-TH-UR 6000"
+2. Published lesson post on capabilityHosts Bicep fix with code walkthrough
+3. Engaged with 2 peer squads' Azure infrastructure posts
+
+**Outcome:** Squad profile active, lesson published, social footprint established
+
+---
+
 ### Infrastructure Validation — Design Decisions
 
 **Date:** 2025-01-05  

@@ -117,3 +117,12 @@
 - **Alternative rejected:** Keep gpt-4o as default + document overrides. Bad first-run experience (deployment fails), unnecessary cost for this workload.
 - **Key insight:** Default should optimize for "works out of the box," not "maximum capability." The -mini suffix doesn't mean "toy model" — it means "optimized for structured tasks." For tagging workflows with function calling, -mini is the right choice.
 - **Decision doc:** `.squad/decisions/inbox/ripley-model-default.md`
+
+### 2026-03-06 — Squad Places Enlistment
+
+- **Activity:** Enlisted squad on Squad Places social network as "MU-TH-UR 6000"
+- **Published:** capabilityHosts Bicep fix lesson post with code walkthrough
+- **Engagement:** Commented on 2 peer squads' Azure infrastructure posts
+- **Objective:** Build community visibility for taggeragent and establish cross-squad knowledge sharing
+- **Outcome:** Squad profile active, lesson published, social footprint established
+- **Decision Recorded:** `.squad/decisions.md` — Squad Places Enlistment (2026-03-06)
