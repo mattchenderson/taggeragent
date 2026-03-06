@@ -186,3 +186,25 @@ rules/
 - Both decisions merged into decisions.md, inbox files removed
 - Coordinated deployment efficiency improvement across core agent and timer function
 
+### 2025-07-25: Dockerfile Build Time + Startup Optimization
+
+**What changed:**
+- Removed redundant `dotnet build` step — `dotnet publish` already compiles, so the separate build was wasting an entire SDK invocation cycle on ACR
+- Added `--no-restore` to publish since restore is a separate cached layer
+- Added `-p:PublishReadyToRun=true` for pre-JIT'd assemblies — reduces cold start time so Foundry health checks pass faster
+- Pinned `--runtime linux-x64` and `--self-contained false` explicitly for deterministic RID-specific restore caching
+- Reverted runtime image from `aspnet:10.0-noble-chiseled` to `aspnet:10.0` per team constraint
+- Added `agent.yaml` to `.dockerignore` (Foundry deployment descriptor, not needed inside the running container)
+
+**Technical rationale:**
+- ACR remote build was timing out at 10 minutes. Eliminating the redundant build step removes one full SDK compilation pass.
+- ReadyToRun pre-compiles IL to native code at publish time. Trades ~15% larger binaries for significantly faster JIT at startup — critical for Foundry container health probe window.
+- Did NOT use trimming — Azure SDK packages (Azure.Identity, Azure.ResourceManager) use reflection heavily and trimming breaks them.
+- Did NOT use Native AOT — same reflection incompatibility with Azure SDK, plus Agent Framework packages are preview and untested with AOT.
+- Did NOT use self-contained — the aspnet:10.0 base image already provides the runtime; duplicating it would bloat the final image.
+
+**Build verification:**
+- `dotnet publish -c Release --runtime linux-x64 --self-contained false -p:PublishReadyToRun=true` succeeds cleanly (0 errors, 0 warnings)
+
+**Requested by:** Matthew Henderson
+

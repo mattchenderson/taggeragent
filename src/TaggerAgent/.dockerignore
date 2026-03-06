@@ -33,5 +33,8 @@ Thumbs.db
 Dockerfile
 .dockerignore
 
+# Foundry deployment descriptor (not needed at container runtime)
+agent.yaml
+
 # Squad/project tooling
 .squad/
