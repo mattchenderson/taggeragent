@@ -4,13 +4,13 @@ WORKDIR /src
 
 # Copy project file first for layer caching on restore
 COPY TaggerAgent.csproj .
-RUN dotnet restore --runtime linux-x64
+RUN dotnet restore --runtime linux-musl-x64
 
 # Copy source and publish in one step (no separate build needed)
 COPY . .
 RUN dotnet publish -c Release -o /app/publish \
     --no-restore \
-    --runtime linux-x64 \
+    --runtime linux-musl-x64 \
     --self-contained false \
     -p:PublishReadyToRun=true
 
