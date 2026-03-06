@@ -169,3 +169,20 @@ rules/
 - Adding interfaces would be premature until real testing strategy is defined by Kane
 
 **Requested by:** Matthew Henderson
+
+### 2025-07-24: .dockerignore Deployment Optimization (Ignore Files Pass)
+
+**What changed:**
+- Created `.dockerignore` for `src/TaggerAgent/` excluding build artifacts (`bin/`, `obj/`), IDE files, docs, git metadata
+- Context reduction: ACR remote builds no longer upload ~50MB of unnecessary artifacts
+
+**Technical rationale:**
+- Dockerfile uses `COPY . .` which uploads entire context
+- local `bin/` and `obj/` from previous builds are pure waste (Dockerfile does fresh `dotnet restore` + `dotnet build`)
+- Reduces Docker build context from ~50MB to source files (few hundred KB)
+
+**Cross-agent context:**
+- Brett concurrently created `.funcignore` for the Functions project as complementary optimization
+- Both decisions merged into decisions.md, inbox files removed
+- Coordinated deployment efficiency improvement across core agent and timer function
+

@@ -36,3 +36,17 @@
 - EnvironmentConfig location: `src/TaggerAgent/EnvironmentConfig.cs` (not in Shared subfolder)
 
 **Build status:** ✅ Verified clean build with no warnings
+
+### 2025-07-24: .dockerignore & .funcignore Deployment Optimization (Ignore Files Pass)
+
+**Cross-agent context:** Dallas created .dockerignore; Brett created .funcignore. Both committed together on main.
+
+**Dallas (.dockerignore):**
+- Excluded `bin/`, `obj/`, IDE files, docs, git from Docker build context
+- Impact: ACR remote build context reduced from ~50MB to source files only (few hundred KB)
+
+**Your responsibility (Brett):**
+- Completed complementary `.funcignore` excluding build artifacts, local secrets, docs, tests, and repo tooling
+- Defense-in-depth against accidental inclusion of `local.settings.json` during zip deploy
+- Both decisions merged into decisions.md, inbox files removed
+

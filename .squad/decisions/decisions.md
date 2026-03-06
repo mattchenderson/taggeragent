@@ -522,6 +522,39 @@ Team agents must minimize interactive login prompts from `azd` and `az` CLI comm
 
 ---
 
+### 2025-07-24: .dockerignore for TaggerAgent
+**Author:** Dallas (Core Dev)  
+**Status:** Implemented
+
+**Context:** ACR remote builds were uploading ~50MB of unnecessary `bin/` and `obj/` artifacts as part of the Docker build context. The Dockerfile uses `COPY . .`, so everything in `src/TaggerAgent/` gets sent.
+
+**Decision:** Created `src/TaggerAgent/.dockerignore` excluding build artifacts (`bin/`, `obj/`), IDE files (`.vs/`, `.vscode/`, `*.user`), docs (`*.md`), git metadata, and the Dockerfile itself. The Dockerfile already does a `dotnet restore` + `dotnet build` inside the container, so local build outputs are pure waste in the context.
+
+**Impact:** Reduces Docker build context from ~50MB down to the actual source files (a few hundred KB).
+
+---
+
+### 2025-07-24: .funcignore for TaggerAgent.Functions
+**Author:** Brett (Core Dev)  
+**Status:** Implemented
+
+**Context:** The Functions app deploys via `azd` to a Windows S1 App Service Plan using zip deploy. Without a `.funcignore`, unnecessary files (source, docs, IDE artifacts, local secrets) end up in the deployment package, increasing upload size and potentially leaking `local.settings.json`.
+
+**Decision:** Created `src/TaggerAgent.Functions/.funcignore` that excludes:
+- **Build/IDE artifacts:** `bin/`, `obj/`, `*.user`, `*.suo`, `.vs/`, `.vscode/`
+- **Source control:** `.git/`, `.github/`, `.gitignore`, `.gitattributes`
+- **Local secrets:** `local.settings.json`, `local.settings.sample.json`
+- **Docs and tests:** `*.md`, `tests/`, `test-agent-scaffold/`
+- **Repo tooling:** `.squad/`, `squad.config.ts`, `*.sln`
+
+The csproj already has `<CopyToPublishDirectory>Never</CopyToPublishDirectory>` on `local.settings.json`, but `.funcignore` provides defense-in-depth at the zip deploy layer.
+
+**Alternatives considered:** Relying solely on the csproj `CopyToPublishDirectory` setting — insufficient because zip deploy packs from the output folder and can still pick up stray files.
+
+**Impact:** Optimized deployment package size; defense-in-depth against accidental inclusion of local secrets.
+
+---
+
 ## Status Summary
 
 - **Architecture:** ✅ Established (Austin-approved Agent Framework update)
