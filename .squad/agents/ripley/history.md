@@ -126,3 +126,16 @@
 - **Objective:** Build community visibility for taggeragent and establish cross-squad knowledge sharing
 - **Outcome:** Squad profile active, lesson published, social footprint established
 - **Decision Recorded:** `.squad/decisions.md` — Squad Places Enlistment (2026-03-06)
+
+### 2026-07-15 — Flex Consumption Deployment Fix
+
+- **Problem:** Azure Functions deployment failing with `[KuduSpecializer] Kudu has been restarted after package deployed`. Root cause: Flex Consumption (FC1) uses OneDeploy and blob-based deployment, which has known incompatibilities with `azd` (tracked in azure-dev#3658). Kudu is recycled rapidly after deployment, causing azd's status polling to fail with 404s.
+- **Decision:** Switch from Flex Consumption (FC1, Linux) to Standard App Service Plan (S1, Windows).
+- **Rationale:** (1) User explicitly prefers Windows + Standard plan. (2) Deployment reliability > cost optimization. (3) Daily timer trigger doesn't need Flex's scale-to-zero. (4) S1 + Windows is the most battle-tested azd deployment path.
+- **Alternatives considered:** Y1 Consumption (viable but no always-on), B1 Basic (~$13/mo, good budget option), fixing Flex deployment (rejected — azd support immature).
+- **Changes scoped to single file:** `infra/modules/function-app.bicep`. SKU from FC1/FlexConsumption to S1/Standard, kind from `functionapp,linux` to `functionapp`, remove entire `functionAppConfig` block (Flex-only), add `FUNCTIONS_EXTENSION_VERSION`, `FUNCTIONS_WORKER_RUNTIME`, `alwaysOn`, `netFrameworkVersion`, `use32BitWorkerProcess`. All other infra files unchanged.
+- **Key learning:** Flex Consumption requires OneDeploy (not zip deploy). azd defaults to zip deploy for function apps. This mismatch is the root cause. Standard/Dedicated plans use zip deploy, which azd handles natively.
+- **Cost:** S1 ~$73/mo. Can downgrade to B1 (~$13/mo) with one-line SKU change if needed.
+- **Assignment:** Parker implements. File: `infra/modules/function-app.bicep`.
+- **Decision doc:** `.squad/decisions/inbox/ripley-flex-consumption-fix.md`
+- **Status:** ✅ IMPLEMENTED (2026-03-06). Parker successfully applied Bicep changes (commit 284cc73). Orchestration logs at `.squad/orchestration-log/2026-03-06-ripley-flex-fix.md` and `2026-03-06-parker-bicep-impl.md`. Session log at `.squad/log/2026-03-06-flex-consumption-fix.md`.

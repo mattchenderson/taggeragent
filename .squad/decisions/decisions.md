@@ -482,11 +482,51 @@ Hosted agents work best in North Central US (NCUS). Default region preference sh
 
 ---
 
+### 2026-03-06T02:15Z: User Directive — Minimize azd/az Login Prompts
+**By:** Matthew Henderson (via Copilot)
+
+Team agents must minimize interactive login prompts from `azd` and `az` CLI commands. Excessive logins interrupt the user's other work.
+
+**Implementation guidance:** Batch deployments into a single run; avoid repeated azd/az commands that re-authenticate.
+
+---
+
+### 2026-07-15: Switch Functions Hosting from Flex Consumption to Standard App Service Plan
+**Author:** Ripley (Lead)  
+**Status:** APPROVED — Ready for Parker (Coordinator) to implement
+
+**Problem:** Azure Functions deployment fails with `[KuduSpecializer] Kudu has been restarted after package deployed`. Root cause: Flex Consumption (FC1) uses OneDeploy + blob-based deployment with known incompatibilities to `azd` (tracked in azure-dev#3658). Kudu recycles rapidly, causing azd's status polling to fail with 404s.
+
+**Decision:** Switch from Flex Consumption (FC1, Linux) to Standard App Service Plan (S1, Windows).
+
+**Rationale:** (1) User explicitly prefers Windows + Standard plan. (2) Deployment reliability > cost. (3) Daily timer trigger doesn't need Flex's scale-to-zero. (4) S1 + Windows is the most battle-tested azd deployment path.
+
+**Alternatives considered:**
+- Y1 Consumption: Viable but no always-on
+- B1 Basic (~$13/mo): Viable, good budget option
+- Fixing Flex deployment: Rejected — azd support immature
+
+**Changes scoped to:** `infra/modules/function-app.bicep`
+- SKU: `FC1/FlexConsumption` → `S1/Standard`
+- Kind: `functionapp,linux` → `functionapp`
+- Remove entire `functionAppConfig` block (Flex-only)
+- Add `FUNCTIONS_EXTENSION_VERSION`, `FUNCTIONS_WORKER_RUNTIME`, `alwaysOn`, `netFrameworkVersion`, `use32BitWorkerProcess`
+
+**All other infra files unchanged:** `azure.yaml`, `main.bicep`, `storage.bicep`, `storage-roles.bicep`, `identity.bicep`
+
+**Key learning:** Flex Consumption requires OneDeploy (not zip deploy). azd defaults to zip deploy for functions. This mismatch is the root cause.
+
+**Cost:** S1 ~$73/mo. Can downgrade to B1 (~$13/mo) with one-line SKU change if needed.
+
+**Assignment:** Parker (Coordinator) implements in `infra/modules/function-app.bicep`.
+
+---
+
 ## Status Summary
 
 - **Architecture:** ✅ Established (Austin-approved Agent Framework update)
-- **Infrastructure:** ✅ Implemented (Parker complete; azd ai agent extension integrated; Foundry endpoint fixes complete)
+- **Infrastructure:** ✅ Implemented (Parker complete; azd ai agent extension integrated; Foundry endpoint fixes complete; Flex→Standard switch approved)
 - **Code:** ✅ Implemented (Dallas complete; Agent Framework rework + .NET 10 upgrade done; Brett/Dallas .NET standards applied)
 - **Tests:** ✅ In progress (Kane updating test project for API changes)
 - **Documentation:** ✅ Current (Ripley complete; architecture.md updated)
-- **Next Phase:** Test updates in progress (Kane)
+- **Next Phase:** Flex Consumption → Standard App Service migration (Parker implementing)

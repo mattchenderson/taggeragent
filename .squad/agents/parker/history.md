@@ -229,3 +229,34 @@ The previous OpenAI endpoint was a hardcoded URL construction (`https://${name}.
 - Use `properties.endpoints['OpenAI Language Model Instance API']` on the **account** resource for `AZURE_OPENAI_ENDPOINT`
 - Reference: `Azure-Samples/azd-ai-starter-basic` uses this exact pattern
 - The function app also receives this endpoint via the `foundryEndpoint` parameter — both consumers (azd extension + function app) need the project endpoint
+
+### 2026-03-06 — Implemented Flex Consumption → Standard App Service Plan
+
+**Assignment from Ripley:** Switch Functions hosting from Flex Consumption (FC1, Linux) to Standard (S1, Windows) due to OneDeploy + blob deployment incompatibilities with azd.
+
+**Implementation Summary:**
+1. **Modified file:** `infra/modules/function-app.bicep`
+   - SKU: `FC1` → `S1` (Flex Consumption → Standard)
+   - Kind: `functionapp,linux` → `functionapp` (switches to Windows)
+   - Removed entire `functionAppConfig` block (Flex-only configuration)
+   - Added runtime configuration: `FUNCTIONS_EXTENSION_VERSION = '~4'`, `FUNCTIONS_WORKER_RUNTIME = 'dotnet-isolated'`
+   - Added siteConfig: `alwaysOn: true`, `netFrameworkVersion: 'v10.0'`, `use32BitWorkerProcess: false`
+
+2. **Validated:** Ran `az bicep build --file infra/main.bicep` — clean build, no errors.
+
+3. **Unchanged files verified:**
+   - `azure.yaml` — azd auto-selects zip deploy for Standard plans (correct)
+   - `infra/main.bicep` — module reference unchanged
+   - `infra/modules/storage.bicep` — function-deployments container remains valid (used by all plan types)
+   - `infra/modules/storage-roles.bicep` — RBAC unchanged
+   - `infra/modules/identity.bicep` — identity unchanged
+
+4. **Committed:** Deployed changes as commit 284cc73 with decision reference.
+
+**Key Learning:** Flex Consumption uses OneDeploy (proprietary Microsoft blob-based deployment), not standard zip deploy. azd defaults to zip deploy for all function apps — this mismatch causes Kudu recycles and 404 polling errors. Standard/Dedicated plans use zip deploy natively, aligning with azd expectations.
+
+**Cost Implications:** S1 ~$73/mo (can downgrade to B1 at ~$13/mo with one-line SKU change if needed post-validation).
+
+**Cross-Agent Context:** Ripley's root cause analysis (azure-dev#3658) was decisive. Implementation followed Ripley's exact specification. Bicep validates clean and ready for deployment testing.
+
+**Orchestration Log:** `.squad/orchestration-log/2026-03-06-parker-bicep-impl.md`
