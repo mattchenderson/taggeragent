@@ -11,8 +11,7 @@ COPY . .
 RUN dotnet publish -c Release -o /app/publish \
     --no-restore \
     --runtime linux-musl-x64 \
-    --self-contained false \
-    -p:PublishReadyToRun=true
+    --self-contained false
 
 # Runtime stage — Alpine reduces image size from ~220MB to ~110MB (compressed)
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
