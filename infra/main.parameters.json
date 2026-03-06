@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "${AZURE_ENV_NAME}"
+    },
+    "location": {
+      "value": "${AZURE_LOCATION}"
+    },
+    "targetSubscriptionId": {
+      "value": "${AZURE_SUBSCRIPTION_ID}"
+    },
+    "aiProjectDeploymentsJson": {
+      "value": "${AI_PROJECT_DEPLOYMENTS}"
+    },
+    "aiProjectConnectionsJson": {
+      "value": "${AI_PROJECT_CONNECTIONS}"
+    },
+    "aiProjectDependentResourcesJson": {
+      "value": "${AI_PROJECT_DEPENDENT_RESOURCES}"
+    },
+    "enableHostedAgents": {
+      "value": "${ENABLE_HOSTED_AGENTS=false}"
+    }
+  }
+}

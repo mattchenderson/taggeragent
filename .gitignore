@@ -1,0 +1,97 @@
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio files
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Build Results
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.vspscc
+*.vssscc
+.builds
+
+# NuGet
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nupkg
+*.snupkg
+**/[Pp]roject.lock.json
+**/[Pp]roject.fragment.lock.json
+artifacts/
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# User-specific files
+*.csproj.user
+*.dbmdl
+*.jfm
+
+# Auto-generated files
+Generated\ Files/
+
+# Docker
+**/[Dd]ocker[Dd]esktop[Ii]nstaller.exe
+
+# Azure Functions
+local.settings.json
+
+# Publish profiles
+*.pubxml
+!**/[Pp]roperties/[Pp]ublish[Pp]rofiles/*.pubxml
+
+# JetBrains
+.idea/
+*.sln.iml
+
+# macOS
+.DS_Store
+
+# Node (in case of tooling)
+node_modules/
+
+# Squad: ignore generated logs
+.squad/orchestration-log/
+.squad/log/
+
+# Copilot local config
+.copilot/
+
+# Compiled ARM templates (Bicep is source of truth)
+# Compiled Bicep output (ARM templates)
+infra/main.json
+infra/modules/*.json

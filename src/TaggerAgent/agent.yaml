@@ -1,0 +1,26 @@
+kind: hosted
+name: tagger-agent
+displayName: "Tagger Agent"
+description: "An AI-powered Azure resource tagger agent that reads resources via Azure Resource Graph, evaluates them against configurable tagging rules, and applies missing or corrective tags."
+metadata:
+  authors:
+    - Microsoft
+  tags:
+    - Azure
+    - Resource Management
+    - Tagging
+    - Governance
+protocols:
+  - protocol: responses
+    version: v1
+environment_variables:
+  - name: AZURE_OPENAI_ENDPOINT
+    value: ${AZURE_OPENAI_ENDPOINT}
+  - name: AZURE_OPENAI_DEPLOYMENT_NAME
+    value: "{{chat}}"
+  - name: STORAGE_ACCOUNT_NAME
+    value: ${STORAGE_ACCOUNT_NAME}
+resources:
+  - name: chat
+    kind: model
+    id: gpt-4o-mini

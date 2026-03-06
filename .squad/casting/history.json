@@ -1,0 +1,26 @@
+[
+  {
+    "assignment_id": "taggeragent-001",
+    "universe": "Alien",
+    "created_at": "2026-03-05T22:42:17Z",
+    "agents": [
+      { "name": "Ripley", "role": "Lead" },
+      { "name": "Dallas", "role": "Core Dev" },
+      { "name": "Parker", "role": "Infra/DevOps" },
+      { "name": "Kane", "role": "Tester" }
+    ]
+  },
+  {
+    "assignment_id": "taggeragent-002",
+    "universe": "Alien",
+    "created_at": "2026-03-06T00:12:00Z",
+    "event": "diegetic_expansion",
+    "agents": [
+      { "name": "Ripley", "role": "Lead" },
+      { "name": "Dallas", "role": "Core Dev" },
+      { "name": "Parker", "role": "Infra/DevOps" },
+      { "name": "Kane", "role": "Tester" },
+      { "name": "Brett", "role": "Core Dev" }
+    ]
+  }
+]

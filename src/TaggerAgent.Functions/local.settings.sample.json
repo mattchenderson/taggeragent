@@ -1,0 +1,11 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "TIMER_SCHEDULE": "0 0 2 * * *",
+    "FOUNDRY_PROJECT_ENDPOINT": "",
+    "AGENT_NAME": "taggeragent",
+    "AZURE_SUBSCRIPTION_ID": ""
+  }
+}
