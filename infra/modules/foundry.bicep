@@ -47,6 +47,16 @@ resource foundryProject 'Microsoft.CognitiveServices/accounts/projects@2025-06-0
   properties: {}
 }
 
+// Capability host — enables the Agents API on the Foundry account
+resource capabilityHost 'Microsoft.CognitiveServices/accounts/capabilityHosts@2025-10-01-preview' = if (enableHostedAgents) {
+  parent: foundryAccount
+  name: 'agents'
+  properties: {
+    capabilityHostKind: 'Agents'
+    enablePublicHostingEnvironment: true
+  }
+}
+
 // ACR — conditionally provisioned when hosted agents are enabled
 resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = if (enableHostedAgents) {
   name: acrName
@@ -58,6 +68,36 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = if (e
     adminUserEnabled: false
     publicNetworkAccess: 'Enabled'
     networkRuleBypassOptions: 'AzureServices'
+  }
+}
+
+// ACR connection on the project so the agent service can pull images
+resource acrConnection 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = if (enableHostedAgents) {
+  parent: foundryProject
+  name: 'acr-connection'
+  properties: {
+    category: 'ContainerRegistry'
+    target: acr!.properties.loginServer
+    authType: 'ManagedIdentity'
+    isSharedToAll: true
+    credentials: {
+      clientId: foundryProject.identity.principalId
+      resourceId: acr!.id
+    }
+    metadata: {
+      ResourceId: acr!.id
+    }
+  }
+}
+
+// AcrPull role for the project identity so the agent can pull container images
+resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableHostedAgents) {
+  scope: acr!
+  name: guid(acr!.id, foundryProject.name, '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+  properties: {
+    principalId: foundryProject.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
   }
 }
 
@@ -74,11 +114,23 @@ resource modelDeployments 'Microsoft.CognitiveServices/accounts/deployments@2025
   }
 ]
 
+// Cognitive Services User role for the project identity on the account
+resource projectCogServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: foundryAccount
+  name: guid(foundryAccount.id, foundryProject.name, 'a97b65f3-24c7-4388-baec-2e87135dc908')
+  properties: {
+    principalId: foundryProject.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: resourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c7-4388-baec-2e87135dc908')
+  }
+}
+
 output accountId string = foundryAccount.id
 output accountName string = foundryAccount.name
 output accountPrincipalId string = foundryAccount.identity.principalId
+output projectPrincipalId string = foundryProject.identity.principalId
 output endpoint string = foundryProject.properties.endpoints['AI Foundry API']
 output openAiEndpoint string = foundryAccount.properties.endpoints['OpenAI Language Model Instance API']
 output projectId string = foundryProject.id
 output projectName string = foundryProject.name
-output acrLoginServer string = enableHostedAgents ? acr.properties.loginServer : ''
+output acrLoginServer string = enableHostedAgents ? acr!.properties.loginServer : ''

@@ -325,11 +325,168 @@ Updated entire project from .NET 8 to .NET 10 target framework (net10.0).
 
 ---
 
+### 2025-01-XX: .NET Best Practices Standards for TaggerAgent.Functions
+**Author:** Brett (Core Dev)  
+**Status:** Applied
+
+Established and applied comprehensive .NET best practices standards to TaggerAgent.Functions project:
+
+**Standards:**
+- Async method naming: All async methods use `Async` suffix (e.g., `RunAsync`)
+- CancellationToken usage: Passed to async operations where SDK supports
+- ConfigureAwait pattern: All async calls use `.ConfigureAwait(false)` to prevent deadlocks
+- Access modifiers: `internal static` Program, `public sealed` functions, `private` helpers
+- Code organization: Complex logic extracted to private helper methods
+- XML documentation: All public APIs documented with `<summary>`, `<param>`, `<returns>` tags
+- Modern C# patterns: File-scoped namespaces, nullable reference types, primary constructors
+
+**Rationale:** Ensures maintainability, no deadlock risks in hosted environments, better testability, clear API documentation.
+
+---
+
+### 2025-01-XX: .NET Best Practices and Naming Standards
+**Author:** Dallas (Core Dev)  
+**Status:** Implemented
+
+Applied comprehensive .NET best practices and naming standards across TaggerAgent project:
+
+**Standards:**
+- File/class name alignment: All `.cs` files contain a class matching filename
+- Sealed classes by default: All classes not designed for inheritance marked `sealed`
+- Async method naming: All async methods use `Async` suffix (e.g., `ScanResourcesAsync`)
+- XML documentation: All public APIs documented with comprehensive XML comments
+- Modern C# patterns: File-scoped namespaces, primary constructors, sealed records
+
+**Key changes:**
+- Renamed `TaggerAgent.cs` → `TaggerAgentTools.cs` (fixed major naming violation)
+- Added Async suffix to all tool methods
+- Applied `sealed` modifier to all Services, Tools, and Models classes
+- Enhanced XML docs with parameter descriptions and return value documentation
+
+**Impact:** Zero breaking changes to runtime behavior; improved maintainability, discoverability, and IntelliSense support.
+
+---
+
+### 2026-03-05: Fixed agent.yaml Structure for azd Extension
+**Author:** Parker (Infra/DevOps)  
+**Status:** Resolved
+
+Fixed `agent.yaml` validation error by correcting schema structure.
+
+**Problem:** azd extension (v0.1.13-preview) rejected `agent.yaml` with error: `template.kind must be one of: [prompt hosted workflow], got ''`
+
+**Root cause:** We were using `AgentManifest` structure with `template:` wrapper, but azd extension expects bare `ContainerAgent` at root.
+
+**Solution:** Use `ContainerAgent` directly at root:
+```yaml
+kind: hosted          # At root level
+name: tagger-agent
+protocols:
+  - protocol: responses
+    version: v1
+```
+
+**Key constraints:**
+- `kind` must be at root (not nested under `template:`)
+- Valid values: `prompt`, `hosted`, `workflow` (lowercase)
+- Extension version 0.1.13-preview (schema may change)
+
+---
+
+### 2025-01-06: Resource Naming with uniqueString Token
+**Author:** Parker (Infra/DevOps)  
+**Status:** Implemented
+
+Adopted standard azd pattern using `uniqueString()` to generate deterministic resource tokens.
+
+**Pattern:**
+```bicep
+var resourceToken = uniqueString(subscription().subscriptionId, environmentName, location)
+```
+
+**Naming scheme:**
+- Readable resources: `${environmentName}-${take(resourceToken, 6)}-{suffix}`
+- Storage accounts: 24-char alphanumeric limit (no hyphens)
+- ACR: 50-char alphanumeric limit (no hyphens)
+
+**Rationale:** Uniqueness per subscription/environment/location context while maintaining reproducibility and readability. Prevents "resource already exists" errors on redeployment.
+
+**Impact:** All resources now have 6-character unique suffix (e.g., `dev-abc123-foundry`). Enables clean redeployment workflows.
+
+---
+
+### 2025-07-25: AZURE_AI_PROJECT_ID Output from Bicep
+**Author:** Parker (Infra/DevOps)  
+**Status:** Implemented
+
+Output `AZURE_AI_PROJECT_ID` from Bicep so azd automatically sets it as an env variable.
+
+**Solution:**
+- `foundry.bicep` outputs `projectId` = `foundryProject.id` (full ARM resource ID)
+- `main.bicep` outputs `AZURE_AI_PROJECT_ID` = `foundry.outputs.projectId`
+
+**Rationale:** azd `azure.ai.agents` extension requires `AZURE_AI_PROJECT_ID` (distinct from `AZURE_AI_PROJECT_ENDPOINT`). No changes needed to `azure.yaml` or `main.parameters.json` — azd maps Bicep outputs to env variables automatically.
+
+---
+
+### 2025-07-25: Fixed AZURE_AI_PROJECT_ENDPOINT — Account vs Project Endpoint
+**Author:** Parker (Infra/DevOps)  
+**Status:** Implemented
+
+Fixed AZURE_AI_PROJECT_ENDPOINT configuration error in Foundry deployment.
+
+**Problem:** `azd deploy` failed with 404 and double-slash: `POST https://...cognitiveservices.azure.com//agents/tagger-agent/versions`
+
+**Root cause:** Endpoint was pointing to Foundry **account** endpoint, not **project** endpoint:
+- Account endpoint: `https://{name}.cognitiveservices.azure.com/` (wrong)
+- Project endpoint: `https://{name}.services.ai.azure.com/api/projects/{project}` (correct)
+
+**Solution (foundry.bicep):**
+- `output endpoint` → `foundryProject.properties.endpoints['AI Foundry API']`
+- `output openAiEndpoint` → `foundryAccount.properties.endpoints['OpenAI Language Model Instance API']`
+
+**Pattern:** Reference `Azure-Samples/azd-ai-starter-basic` which uses same endpoint dictionary pattern.
+
+**Impact:** Both azd extension and function app now receive correct project endpoint. No breaking changes to main.bicep outputs or azure.yaml.
+
+---
+
+### 2025-01-05: Model Default — Switch to gpt-4o-mini
+**Author:** Ripley  
+**Status:** Implemented  
+**Requested by:** Matthew Henderson
+
+Switched default model from `gpt-4o` to `gpt-4o-mini`.
+
+**Rationale:**
+1. **Wider availability** — gpt-4o-mini available on most subscriptions (including basic/free tiers)
+2. **Sufficient capability** — TaggerAgent uses tool-heavy structured workflows (Resource Graph, tagging, rule evaluation) that don't need gpt-4o's advanced reasoning
+3. **Cost efficiency** — ~60x cheaper than gpt-4o; matters for automated daily scans across large subscriptions
+4. **Excellent function calling support** — Critical for agent with 5 registered tools
+5. **Easy override** — Users can edit `azure.yaml` and redeploy if they prefer gpt-4o
+
+**Files changed:**
+- `azure.yaml` — `gpt-4o` → `gpt-4o-mini`; version `2024-08-06` → `2024-07-18`
+- `src/TaggerAgent/agent.yaml` — Resource ID `gpt-4o` → `gpt-4o-mini`
+- `README.md` — Updated Technology Stack and added Model Configuration section
+- `docs/architecture.md` — Updated diagram
+
+**Alternative rejected:** Keep gpt-4o, add documentation. Con: Fails on many subscriptions, unnecessary cost, bad first-run experience.
+
+---
+
+### 2026-03-06T01:38Z: User Directive — Hosted Agents Region Preference
+**By:** Matthew Henderson (via Copilot)
+
+Hosted agents work best in North Central US (NCUS). Default region preference should reflect this.
+
+---
+
 ## Status Summary
 
 - **Architecture:** ✅ Established (Austin-approved Agent Framework update)
-- **Infrastructure:** ✅ Implemented (Parker complete; azd ai agent extension integrated)
-- **Code:** ✅ Implemented (Dallas complete; Agent Framework rework + .NET 10 upgrade done)
+- **Infrastructure:** ✅ Implemented (Parker complete; azd ai agent extension integrated; Foundry endpoint fixes complete)
+- **Code:** ✅ Implemented (Dallas complete; Agent Framework rework + .NET 10 upgrade done; Brett/Dallas .NET standards applied)
 - **Tests:** ✅ In progress (Kane updating test project for API changes)
 - **Documentation:** ✅ Current (Ripley complete; architecture.md updated)
 - **Next Phase:** Test updates in progress (Kane)

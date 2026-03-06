@@ -206,3 +206,26 @@ Added missing `location: location` property to `foundryProject` resource in `fou
 azd automatically maps Bicep outputs to env variables, so no changes needed to `azure.yaml` or `main.parameters.json`.
 
 **Key Learning:** The azd agent extension requires `AZURE_AI_PROJECT_ID` (the ARM resource ID, not the endpoint). This is distinct from `AZURE_AI_PROJECT_ENDPOINT` which was already output. Both are needed.
+
+### 2025-07-25: Fixed AZURE_AI_PROJECT_ENDPOINT — Account vs Project Endpoint
+
+**Problem:** `azd deploy` for the tagger-agent returned 404 with a double-slash in the URL:
+`POST https://...foundry.cognitiveservices.azure.com//agents/tagger-agent/versions`
+
+**Root Cause:** `AZURE_AI_PROJECT_ENDPOINT` was set to `foundryAccount.properties.endpoint` (the Cognitive Services *account* endpoint), not the Foundry *project* endpoint. The agents API lives under the project endpoint, not the account.
+
+- Account endpoint: `https://{name}.cognitiveservices.azure.com/` (wrong — causes 404 + double-slash)
+- Project endpoint: `https://{name}.services.ai.azure.com/api/projects/{project}` (correct)
+
+**Fix (foundry.bicep, 2 lines):**
+1. `output endpoint` → `foundryProject.properties.endpoints['AI Foundry API']`
+2. `output openAiEndpoint` → `foundryAccount.properties.endpoints['OpenAI Language Model Instance API']`
+
+The previous OpenAI endpoint was a hardcoded URL construction (`https://${name}.openai.azure.com`); the reference sample uses the `endpoints` dictionary from the resource properties.
+
+**Key Learnings:**
+- Foundry account and project both have an `endpoint` property, but they are different URLs
+- Use `properties.endpoints['AI Foundry API']` on the **project** resource for `AZURE_AI_PROJECT_ENDPOINT`
+- Use `properties.endpoints['OpenAI Language Model Instance API']` on the **account** resource for `AZURE_OPENAI_ENDPOINT`
+- Reference: `Azure-Samples/azd-ai-starter-basic` uses this exact pattern
+- The function app also receives this endpoint via the `foundryEndpoint` parameter — both consumers (azd extension + function app) need the project endpoint

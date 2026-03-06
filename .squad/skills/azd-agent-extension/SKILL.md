@@ -98,6 +98,17 @@ to env variables, so outputting it from `main.bicep` is sufficient. The value is
 resource ID: `/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{account}/projects/{project}`.
 Get it from `foundryProject.id` in Bicep.
 
+**Critical:** `AZURE_AI_PROJECT_ENDPOINT` must be the Foundry **project** endpoint, NOT the
+account endpoint. The account endpoint (`foundryAccount.properties.endpoint`) returns a
+`.cognitiveservices.azure.com` URL; the agents API expects the project endpoint from
+`foundryProject.properties.endpoints['AI Foundry API']` which returns a
+`.services.ai.azure.com/api/projects/{project}` URL. Using the account endpoint causes a 404
+with a double-slash in the URL path.
+
+Similarly, `AZURE_OPENAI_ENDPOINT` should come from
+`foundryAccount.properties.endpoints['OpenAI Language Model Instance API']` rather than
+hardcoding the URL pattern.
+
 ## Constraints
 
 - **Region:** Hosted agents currently require `northcentralus`
