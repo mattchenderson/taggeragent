@@ -25,6 +25,10 @@ services:
                 scale:
                     maxReplicas: 3
                     minReplicas: 1
+                environment_variables:
+                    AZURE_SUBSCRIPTION_ID: ${AZURE_SUBSCRIPTION_ID}
+                    RULES_STORAGE_URL: ${RULES_STORAGE_URL}
+                    AZURE_AI_PROJECT_ENDPOINT: ${AZURE_AI_PROJECT_ENDPOINT}
             deployments:
                 - model:
                     format: OpenAI
