@@ -1,0 +1,31 @@
+# Build and IDE artifacts
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+
+# Source control
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# Local settings (never deploy)
+local.settings.json
+local.settings.sample.json
+
+# Documentation
+*.md
+
+# Tests
+tests/
+test-agent-scaffold/
+
+# Solution and project files not needed at runtime
+*.sln
+
+# Squad / CI config
+.squad/
+squad.config.ts

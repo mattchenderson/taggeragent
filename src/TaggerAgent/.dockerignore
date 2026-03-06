@@ -1,0 +1,37 @@
+# Build artifacts
+bin/
+obj/
+
+# IDE and editor files
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+
+# NuGet
+*.nupkg
+nuget.config
+
+# Test directories
+**/Tests/
+**/test/
+**/xunit.*
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Docker (avoid recursive context)
+Dockerfile
+.dockerignore
+
+# Squad/project tooling
+.squad/
