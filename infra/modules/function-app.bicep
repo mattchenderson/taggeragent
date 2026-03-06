@@ -31,17 +31,15 @@ param timerSchedule string
 var functionAppName = '${environmentName}-${take(resourceToken, 6)}-func'
 var hostingPlanName = '${environmentName}-${take(resourceToken, 6)}-func-plan'
 
-// Flex Consumption plan for Azure Functions
+// Standard App Service plan for Azure Functions (Windows)
 resource hostingPlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: hostingPlanName
   location: location
   sku: {
-    name: 'FC1'
-    tier: 'FlexConsumption'
+    name: 'S1'
+    tier: 'Standard'
   }
-  properties: {
-    reserved: true
-  }
+  properties: {}
 }
 
 resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
@@ -50,7 +48,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   tags: {
     'azd-service-name': 'functions'
   }
-  kind: 'functionapp,linux'
+  kind: 'functionapp'
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
@@ -60,30 +58,36 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   properties: {
     serverFarmId: hostingPlan.id
     httpsOnly: true
-    functionAppConfig: {
-      deployment: {
-        storage: {
-          type: 'blobContainer'
-          value: 'https://${storageAccountName}.blob.${environment().suffixes.storage}/function-deployments'
-          authentication: {
-            type: 'UserAssignedIdentity'
-            userAssignedIdentityResourceId: functionIdentityId
-          }
-        }
-      }
-      scaleAndConcurrency: {
-        maximumInstanceCount: 100
-        instanceMemoryMB: 2048
-      }
-      runtime: {
-        name: 'dotnet-isolated'
-        version: '10.0'
-      }
-    }
     siteConfig: {
+      netFrameworkVersion: 'v10.0'
+      use32BitWorkerProcess: false
+      alwaysOn: true
       appSettings: [
         {
+          name: 'FUNCTIONS_EXTENSION_VERSION'
+          value: '~4'
+        }
+        {
+          name: 'FUNCTIONS_WORKER_RUNTIME'
+          value: 'dotnet-isolated'
+        }
+        {
           name: 'AZURE_CLIENT_ID'
+          value: reference(functionIdentityId, '2023-01-31').clientId
+        }
+        // Identity-based AzureWebJobsStorage — required for Functions runtime
+        // (timer state, lease management, internal queues). Uses user-assigned identity
+        // since allowSharedKeyAccess is disabled on the storage account.
+        {
+          name: 'AzureWebJobsStorage__accountName'
+          value: storageAccountName
+        }
+        {
+          name: 'AzureWebJobsStorage__credential'
+          value: 'managedidentity'
+        }
+        {
+          name: 'AzureWebJobsStorage__clientId'
           value: reference(functionIdentityId, '2023-01-31').clientId
         }
         {
