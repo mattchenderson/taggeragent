@@ -77,8 +77,8 @@ resource modelDeployments 'Microsoft.CognitiveServices/accounts/deployments@2025
 output accountId string = foundryAccount.id
 output accountName string = foundryAccount.name
 output accountPrincipalId string = foundryAccount.identity.principalId
-output endpoint string = foundryAccount.properties.endpoint
-output openAiEndpoint string = 'https://${accountName}.openai.azure.com'
+output endpoint string = foundryProject.properties.endpoints['AI Foundry API']
+output openAiEndpoint string = foundryAccount.properties.endpoints['OpenAI Language Model Instance API']
 output projectId string = foundryProject.id
 output projectName string = foundryProject.name
 output acrLoginServer string = enableHostedAgents ? acr.properties.loginServer : ''
